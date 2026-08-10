@@ -29,7 +29,7 @@ class ActivityManagementTest extends TestCase
             ->get('/dashboard');
 
         $response->assertStatus(200);
-        $response->assertSee('Executive Dashboard');
+        $response->assertSee('Pusat Kegiatan');
     }
 
     public function test_can_fetch_events_feed(): void

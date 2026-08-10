@@ -107,6 +107,7 @@ class FirestoreService
                         'project_id' => 'proj_web',
                         'project_name' => 'Website Development',
                         'createdBy' => 'usr_leonard',
+                        'division_id' => 'div_soc',
                         'created_at' => now()->toIso8601String(),
                         'updated_at' => now()->toIso8601String()
                     ],
@@ -128,6 +129,7 @@ class FirestoreService
                         'project_id' => 'proj_pub',
                         'project_name' => 'Public Relations',
                         'createdBy' => 'usr_leonard',
+                        'division_id' => 'div_ipd',
                         'created_at' => now()->toIso8601String(),
                         'updated_at' => now()->toIso8601String()
                     ],
@@ -149,6 +151,7 @@ class FirestoreService
                         'project_id' => 'proj_web',
                         'project_name' => 'Website Development',
                         'createdBy' => 'usr_leonard',
+                        'division_id' => 'div_ipd',
                         'created_at' => now()->toIso8601String(),
                         'updated_at' => now()->toIso8601String()
                     ],
@@ -170,6 +173,7 @@ class FirestoreService
                         'project_id' => 'proj_web',
                         'project_name' => 'Website Development',
                         'createdBy' => 'usr_leonard',
+                        'division_id' => 'div_prod',
                         'created_at' => now()->toIso8601String(),
                         'updated_at' => now()->toIso8601String()
                     ]

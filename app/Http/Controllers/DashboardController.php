@@ -28,7 +28,10 @@ class DashboardController extends Controller
 
         // 1. Activities scheduled this week
         $activitiesThisWeek = $activities->filter(function ($act) use ($startOfWeek, $endOfWeek) {
-            $start = Carbon::parse($act['start'] ?? $act['start_date']);
+            $startVal = $act['start'] ?? ($act['start_date'] ?? null);
+            if (!$startVal) return false;
+            
+            $start = Carbon::parse($startVal);
             return $start->between($startOfWeek, $endOfWeek);
         });
 
@@ -55,11 +58,42 @@ class DashboardController extends Controller
 
         // 4. Overdue and Unassigned List
         $overdueList = $activities->filter(function ($act) use ($now) {
-            $end = Carbon::parse($act['end'] ?? $act['due_date']);
+            $endVal = $act['end'] ?? ($act['due_date'] ?? null);
+            if (!$endVal) return false;
+
+            $end = Carbon::parse($endVal);
             $isNotDone = !in_array($act['status'] ?? '', ['Confirmed', 'done', 'Closed', 'cancelled']);
             $isUnassigned = empty($act['assignees']) && empty($act['assignee_id']);
             return ($end->lt($now) && $isNotDone) || $isUnassigned;
         });
+
+        // 5. Team Specific Data
+        $myDivisionId = $user['division_id'] ?? null;
+        $myTeamActivities = collect();
+        $recentTeamFeed = collect();
+
+        if ($myDivisionId) {
+            $myTeamActivities = $activities->filter(function ($act) use ($myDivisionId) {
+                return ($act['division_id'] ?? null) === $myDivisionId;
+            });
+
+            $recentTeamFeed = $myTeamActivities->filter(function ($act) use ($user) {
+                // Exclude if user has deleted this notification
+                $deletedBy = $act['deletedNotificationBy'] ?? [];
+                return !in_array($user['id'], $deletedBy);
+            })->sortByDesc(function ($act) {
+                return Carbon::parse($act['created_at'] ?? '1970-01-01')->timestamp;
+            });
+            
+            $unreadCount = $recentTeamFeed->filter(function($act) use ($user) {
+                 $readBy = $act['readBy'] ?? [];
+                 return !in_array($user['id'], $readBy);
+            })->count();
+            
+            $recentTeamFeed = $recentTeamFeed->take(3); // only top 3 for dropdown
+        } else {
+            $unreadCount = 0;
+        }
 
         return view('dashboard', compact(
             'user',
@@ -71,7 +105,10 @@ class DashboardController extends Controller
             'userWorkload',
             'overdueList',
             'totalActivities',
-            'completedActivities'
+            'completedActivities',
+            'myTeamActivities',
+            'recentTeamFeed',
+            'unreadCount'
         ));
     }
 }

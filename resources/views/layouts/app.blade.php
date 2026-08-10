@@ -51,12 +51,7 @@
             <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto text-sm">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-md font-medium transition {{ request()->is('dashboard') || request()->is('/') ? 'bg-white/20 text-white shadow-xs' : 'text-blue-100 hover:bg-white/10 hover:text-white' }}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-                    Dashboard Executive
-                </a>
-
-                <a href="{{ route('activities.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-md font-medium transition {{ request()->is('activities') ? 'bg-white/20 text-white shadow-xs' : 'text-blue-100 hover:bg-white/10 hover:text-white' }}">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    Kalender & Team Planner
+                    Pusat Kegiatan & Kalender Tim
                 </a>
             </nav>
 
@@ -98,6 +93,7 @@
                         <span class="w-1.5 h-1.5 rounded-full bg-bps-green mr-1.5 animate-pulse"></span>
                         Cloud Firestore Connected
                     </span>
+                    @yield('header_actions')
                 </div>
             </header>
 

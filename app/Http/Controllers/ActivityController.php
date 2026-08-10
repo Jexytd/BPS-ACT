@@ -30,9 +30,16 @@ class ActivityController extends Controller
     public function getEvents(Request $request)
     {
         $activities = $this->firestore->getCollection('activities');
+        $users = collect($this->firestore->getCollection('users'))->keyBy('id');
+        $divisions = collect($this->firestore->getCollection('divisions'))->keyBy('id');
+        $teamId = $request->query('team_id');
         $events = [];
 
         foreach ($activities as $act) {
+            if ($teamId && ($act['division_id'] ?? null) !== $teamId) {
+                continue;
+            }
+
             $statusColor = match ($act['status'] ?? 'planned') {
                 'Confirmed', 'done' => '#6DBE45',
                 'In progress', 'ongoing' => '#ED8B00',
@@ -41,6 +48,17 @@ class ActivityController extends Controller
                 'cancelled', 'Closed' => '#6B7280',
                 default => '#005AA9'
             };
+
+            $creator = $users->get($act['createdBy'] ?? null);
+            $creatorName = $creator ? $creator['name'] : 'Sistem';
+            $creatorTeam = $creator && isset($creator['division_id']) ? ($divisions->get($creator['division_id'])['name'] ?? 'Umum') : 'Umum';
+
+            $actAssignees = $act['assignees'] ?? [$act['assignee_id'] ?? null];
+            $assigneesNames = collect($actAssignees)
+                ->filter()
+                ->map(fn($id) => $users->get($id)['name'] ?? $id)
+                ->values()
+                ->toArray();
 
             $events[] = [
                 'id' => (string) $act['id'],
@@ -58,8 +76,11 @@ class ActivityController extends Controller
                     'category' => $act['category'] ?? 'Survei',
                     'location' => $act['location'] ?? 'BPS HQ',
                     'createdBy' => $act['createdBy'] ?? 'system',
+                    'creator_name' => $creatorName,
+                    'creator_team' => $creatorTeam,
                     'project_name' => $act['project_name'] ?? 'Kegiatan Tim',
                     'assignees' => $act['assignees'] ?? [$act['assignee_id'] ?? null],
+                    'assignees_names' => $assigneesNames,
                 ]
             ];
         }
@@ -141,6 +162,7 @@ class ActivityController extends Controller
             'due_date' => Carbon::parse($validated['end'])->toDateString(),
             'assignee_id' => $validated['assignees'][0] ?? null,
             'createdBy' => $user['id'],
+            'division_id' => $user['division_id'] ?? null,
             'created_at' => now()->toIso8601String(),
             'updated_at' => now()->toIso8601String(),
         ]);
@@ -207,5 +229,41 @@ class ActivityController extends Controller
         $this->firestore->deleteDocument('activities', $id);
 
         return response()->json(['status' => 'success', 'message' => 'Kegiatan berhasil dihapus.']);
+    }
+
+    public function markNotificationRead(string $id)
+    {
+        $user = session('user');
+        $existing = $this->firestore->getDocument('activities', $id);
+
+        if (!$existing) {
+            return response()->json(['message' => 'Notifikasi tidak ditemukan'], 404);
+        }
+
+        $readBy = $existing['readBy'] ?? [];
+        if (!in_array($user['id'], $readBy)) {
+            $readBy[] = $user['id'];
+            $this->firestore->setDocument('activities', $id, ['readBy' => $readBy]);
+        }
+
+        return response()->json(['status' => 'success']);
+    }
+
+    public function deleteNotification(string $id)
+    {
+        $user = session('user');
+        $existing = $this->firestore->getDocument('activities', $id);
+
+        if (!$existing) {
+            return response()->json(['message' => 'Notifikasi tidak ditemukan'], 404);
+        }
+
+        $deletedBy = $existing['deletedNotificationBy'] ?? [];
+        if (!in_array($user['id'], $deletedBy)) {
+            $deletedBy[] = $user['id'];
+            $this->firestore->setDocument('activities', $id, ['deletedNotificationBy' => $deletedBy]);
+        }
+
+        return response()->json(['status' => 'success']);
     }
 }

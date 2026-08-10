@@ -27,4 +27,11 @@ Route::middleware([EnsureAuthenticated::class])->group(function () {
     Route::post('/api/activities', [ActivityController::class, 'store']);
     Route::patch('/api/activities/{id}', [ActivityController::class, 'update']);
     Route::delete('/api/activities/{id}', [ActivityController::class, 'destroy']);
+    
+    // Notifications APIs
+    Route::post('/api/notifications/{id}/read', [ActivityController::class, 'markNotificationRead']);
+    Route::post('/api/notifications/{id}/delete', [ActivityController::class, 'deleteNotification']);
+    
+    // Notifications Page
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
 });
