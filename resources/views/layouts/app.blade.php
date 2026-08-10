@@ -38,9 +38,7 @@
         <aside class="w-64 bg-bps-blue text-white flex flex-col flex-shrink-0 shadow-lg">
             <!-- Brand Header -->
             <div class="px-5 py-4 flex items-center gap-3 border-b border-white/10 bg-black/10">
-                <div class="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center font-bold text-white tracking-wider text-sm border border-white/20">
-                    BPS
-                </div>
+                <img src="{{ asset('BPS Logo.svg') }}" alt="BPS Logo" class="h-9 w-auto object-contain">
                 <div>
                     <h1 class="font-bold text-base tracking-tight leading-none text-white">BPS ACT</h1>
                     <p class="text-xs text-blue-100/70 font-normal mt-0.5">Activity & Planner</p>

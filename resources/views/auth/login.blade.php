@@ -10,9 +10,7 @@
     <div class="w-full max-w-md bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
         <!-- Header BPS -->
         <div class="bg-bps-blue p-6 text-white text-center">
-            <div class="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center font-extrabold text-white text-lg tracking-wider mx-auto mb-3 border border-white/20">
-                BPS
-            </div>
+            <img src="{{ asset('BPS Logo.svg') }}" alt="BPS Logo" class="h-12 w-auto mx-auto mb-3 object-contain">
             <h1 class="text-xl font-bold tracking-tight">BPS ACT — Login Sesi</h1>
             <p class="text-xs text-blue-100 mt-1">Pencatatan & Perencanaan Kegiatan Tim Badan Pusat Statistik</p>
         </div>
