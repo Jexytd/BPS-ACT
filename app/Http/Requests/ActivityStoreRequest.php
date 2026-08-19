@@ -26,6 +26,11 @@ class ActivityStoreRequest extends FormRequest
             'assignees.*' => 'string',
             'project_id' => 'nullable|string',
             'project_name' => 'nullable|string',
+            'documents' => 'nullable|array',
+            'documents.*' => 'boolean',
+            'documents_links' => 'nullable|array',
+            'documents_links.*' => 'nullable|url',
+            'result' => 'nullable|string',
         ];
     }
 }

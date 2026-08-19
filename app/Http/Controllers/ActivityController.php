@@ -17,6 +17,15 @@ class ActivityController extends Controller
         $this->firestore = $firestore;
     }
 
+    public function create()
+    {
+        $user = session('user');
+        $users = $this->firestore->getCollection('users');
+        $divisions = collect($this->firestore->getCollection('divisions'))->keyBy('id');
+        
+        return view('activities.create', compact('user', 'users', 'divisions'));
+    }
+
     public function index()
     {
         $user = session('user');
@@ -81,6 +90,8 @@ class ActivityController extends Controller
                     'project_name' => $act['project_name'] ?? 'Kegiatan Tim',
                     'assignees' => $act['assignees'] ?? [$act['assignee_id'] ?? null],
                     'assignees_names' => $assigneesNames,
+                    'result' => $act['result'] ?? '',
+                    'documents' => $act['documents'] ?? null,
                 ]
             ];
         }

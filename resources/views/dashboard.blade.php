@@ -79,13 +79,6 @@
             </button>
         </div>
 
-        <!-- View Mode & Action -->
-        <div class="flex items-center gap-4">
-            <button @click="openModal()" class="px-5 py-2.5 bg-bps-blue hover:bg-bps-teal text-white font-bold text-sm rounded-lg shadow-md transition flex items-center gap-2 cursor-pointer">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                Catat Kegiatan Baru
-            </button>
-        </div>
     </div>
 
     <!-- Calendar Container -->
@@ -109,7 +102,7 @@
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
             <div class="inline-block w-full max-w-xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white rounded-xl shadow-2xl border border-gray-200 sm:my-8">
                 <div class="flex items-center justify-between pb-4 border-b border-gray-200">
-                    <h3 class="text-lg font-bold text-gray-900" x-text="form.id ? 'Edit Kegiatan BPS #' + form.id : 'Catat Kegiatan Tim Baru'"></h3>
+                    <h3 class="text-lg font-bold text-gray-900" x-text="'Edit Kegiatan BPS #' + form.id"></h3>
                     <button @click="closeModal()" class="text-gray-400 hover:text-gray-600">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
@@ -377,21 +370,8 @@
                 if (data) {
                     this.form = { ...data };
                 } else {
-                    const now = new Date();
-                    const end = new Date(now.getTime() + 2 * 3600 * 1000);
-                    // default ke diri sendiri
-                    const myId = '{{ $user['id'] ?? '' }}';
-                    this.form = {
-                        id: null,
-                        title: '',
-                        start: now.toISOString().slice(0, 16),
-                        end: end.toISOString().slice(0, 16),
-                        assignees: myId ? [myId] : [],
-                        status: 'planned',
-                        category: 'Survei',
-                        location: 'Kantor BPS',
-                        description: ''
-                    };
+                    window.location.href = "{{ route('activities.create') }}";
+                    return;
                 }
                 this.conflictWarning = false;
                 this.showModal = true;

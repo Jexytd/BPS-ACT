@@ -31,10 +31,10 @@
 
         <!-- Right Side: New Activity Action -->
         <div class="flex items-center gap-3">
-            <button @click="openModal()" class="px-4 py-2 bg-bps-blue hover:bg-bps-teal text-white font-semibold text-xs rounded-lg shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+            <a href="{{ route('activities.create') }}" class="px-4 py-2 bg-bps-blue hover:bg-bps-teal text-white font-semibold text-xs rounded-lg shadow-xs transition flex items-center gap-1.5 cursor-pointer">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 Input Kegiatan Baru
-            </button>
+            </a>
         </div>
     </div>
 
@@ -61,7 +61,7 @@
 
             <div class="inline-block w-full max-w-xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white rounded-xl shadow-2xl border border-gray-200 sm:my-8">
                 <div class="flex items-center justify-between pb-4 border-b border-gray-200">
-                    <h3 class="text-base font-bold text-gray-900" x-text="form.id ? 'Edit Kegiatan BPS #' + form.id : 'Input Kegiatan / Aktivitas Tim Baru'"></h3>
+                    <h3 class="text-base font-bold text-gray-900" x-text="'Edit Kegiatan BPS #' + form.id"></h3>
                     <button @click="closeModal()" class="text-gray-400 hover:text-gray-600">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
@@ -116,10 +116,12 @@
                         <div>
                             <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Kategori Activity</label>
                             <select x-model="form.category" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-bps-blue focus:border-bps-blue">
-                                <option value="Survei">Survei</option>
                                 <option value="Sensus">Sensus</option>
-                                <option value="Pengolahan">Pengolahan</option>
-                                <option value="Rapat">Rapat / Koordinasi</option>
+                                <option value="Survei Rutin">Survei Rutin</option>
+                                <option value="Survei Khusus">Survei Khusus / Ad-Hoc</option>
+                                <option value="Rapat Koordinasi">Rapat Koordinasi</option>
+                                <option value="FGD / Pelatihan">FGD / Pelatihan / Bimtek</option>
+                                <option value="Administrasi">Administrasi / Lainnya</option>
                             </select>
                         </div>
                     </div>
@@ -127,6 +129,11 @@
                     <div>
                         <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Lokasi / Ruang / Platform</label>
                         <input type="text" x-model="form.location" placeholder="Contoh: Ruang Rapat 302 / Zoom BPS" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-bps-blue focus:border-bps-blue">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Hasil Kegiatan / Tautan Output</label>
+                        <input type="text" x-model="form.result" placeholder="Tautan Laporan/Notula kegiatan (Opsional)" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-bps-blue focus:border-bps-blue">
                     </div>
 
                     <div>
@@ -184,6 +191,13 @@
                     <div>
                         <label class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Catatan Deskripsi</label>
                         <p class="text-xs text-gray-600 mt-1 leading-relaxed bg-gray-50 p-3 rounded-lg border border-gray-100" x-text="selectedEvent?.extendedProps?.description || 'Tidak ada catatan.'"></p>
+                    </div>
+
+                    <div x-show="selectedEvent?.extendedProps?.result">
+                        <label class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Hasil Kegiatan / Tautan Output</label>
+                        <div class="mt-1">
+                            <a :href="selectedEvent?.extendedProps?.result" target="_blank" class="text-xs font-semibold text-bps-blue hover:underline break-all" x-text="selectedEvent?.extendedProps?.result"></a>
+                        </div>
                     </div>
                 </div>
 
@@ -276,20 +290,13 @@
             openModal(data = null) {
                 if (data) {
                     this.form = { ...data };
+                    // Set defaults for missing fields in old events
+                    if (!this.form.result) this.form.result = '';
+                    if (!this.form.category) this.form.category = 'Survei Rutin';
                 } else {
-                    const now = new Date();
-                    const end = new Date(now.getTime() + 2 * 3600 * 1000);
-                    this.form = {
-                        id: null,
-                        title: '',
-                        start: now.toISOString().slice(0, 16),
-                        end: end.toISOString().slice(0, 16),
-                        assignees: ['usr_catherine'],
-                        status: 'planned',
-                        category: 'Survei',
-                        location: 'BPS HQ',
-                        description: ''
-                    };
+                    // Creating is now handled on the dedicated page
+                    window.location.href = "{{ route('activities.create') }}";
+                    return;
                 }
                 this.conflictWarning = false;
                 this.showModal = true;
@@ -401,9 +408,10 @@
                     end: e.end ? e.end.toISOString().slice(0, 16) : e.start.toISOString().slice(0, 16),
                     assignees: e.extendedProps.assignees || [],
                     status: e.extendedProps.status || 'planned',
-                    category: e.extendedProps.category || 'Survei',
+                    category: e.extendedProps.category || 'Survei Rutin',
                     location: e.extendedProps.location || '',
-                    description: e.extendedProps.description || ''
+                    description: e.extendedProps.description || '',
+                    result: e.extendedProps.result || ''
                 };
                 this.showDrawer = false;
                 this.showModal = true;

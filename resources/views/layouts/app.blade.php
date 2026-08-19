@@ -7,6 +7,7 @@
     <title>@yield('title', 'BPS ACT — Activity Tracker & Team Planner')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
+        [x-cloak] { display: none !important; }
         /* FullCalendar BPS Brand Customization */
         .fc {
             --fc-border-color: #e5e7eb;
@@ -50,6 +51,11 @@
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-md font-medium transition {{ request()->is('dashboard') || request()->is('/') ? 'bg-white/20 text-white shadow-xs' : 'text-blue-100 hover:bg-white/10 hover:text-white' }}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                     Pusat Kegiatan & Kalender Tim
+                </a>
+                
+                <a href="{{ route('activities.create') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-md font-medium transition {{ request()->is('activities/create') ? 'bg-white/20 text-white shadow-xs' : 'text-blue-100 hover:bg-white/10 hover:text-white' }}">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Buat Kegiatan BPS
                 </a>
             </nav>
 
@@ -117,5 +123,6 @@
         </div>
     </div>
     @yield('scripts')
+    @stack('scripts')
 </body>
 </html>

@@ -16,6 +16,7 @@ Route::middleware([EnsureAuthenticated::class])->group(function () {
     Route::get('/', [DashboardController::class, 'index']);
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    Route::get('/activities/create', [ActivityController::class, 'create'])->name('activities.create');
     Route::get('/activities', [ActivityController::class, 'index'])->name('activities.index');
 
     // JSON API Feed for FullCalendar & Resource Timeline
