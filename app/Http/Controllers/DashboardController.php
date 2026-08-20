@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\FirestoreService;
+use App\Models\Activity;
+use App\Models\User;
+use App\Models\Division;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -15,12 +18,45 @@ class DashboardController extends Controller
         $this->firestore = $firestore;
     }
 
+    protected function getUsersCollection()
+    {
+        try {
+            $dbUsers = User::all();
+            if ($dbUsers->isNotEmpty()) {
+                return $dbUsers->keyBy('id')->toArray();
+            }
+        } catch (\Throwable $e) {}
+        return $this->firestore->getCollection('users');
+    }
+
+    protected function getDivisionsCollection()
+    {
+        try {
+            $dbDivisions = Division::all();
+            if ($dbDivisions->isNotEmpty()) {
+                return $dbDivisions->keyBy('id')->toArray();
+            }
+        } catch (\Throwable $e) {}
+        return $this->firestore->getCollection('divisions');
+    }
+
+    protected function getActivitiesCollection()
+    {
+        try {
+            $dbActivities = Activity::all();
+            if ($dbActivities->isNotEmpty()) {
+                return $dbActivities->keyBy('id')->toArray();
+            }
+        } catch (\Throwable $e) {}
+        return $this->firestore->getCollection('activities');
+    }
+
     public function index()
     {
         $user = session('user');
-        $users = collect($this->firestore->getCollection('users'))->keyBy('id');
-        $divisions = collect($this->firestore->getCollection('divisions'))->keyBy('id');
-        $activities = collect($this->firestore->getCollection('activities'));
+        $users = collect($this->getUsersCollection())->keyBy('id');
+        $divisions = collect($this->getDivisionsCollection())->keyBy('id');
+        $activities = collect($this->getActivitiesCollection());
 
         $now = Carbon::now();
         $startOfWeek = $now->copy()->startOfWeek();
@@ -79,14 +115,14 @@ class DashboardController extends Controller
 
             $recentTeamFeed = $myTeamActivities->filter(function ($act) use ($user) {
                 // Exclude if user has deleted this notification
-                $deletedBy = $act['deletedNotificationBy'] ?? [];
+                $deletedBy = $act['deleted_notification_by'] ?? ($act['deletedNotificationBy'] ?? []);
                 return !in_array($user['id'], $deletedBy);
             })->sortByDesc(function ($act) {
                 return Carbon::parse($act['created_at'] ?? '1970-01-01')->timestamp;
             });
             
             $unreadCount = $recentTeamFeed->filter(function($act) use ($user) {
-                 $readBy = $act['readBy'] ?? [];
+                 $readBy = $act['read_by'] ?? ($act['readBy'] ?? []);
                  return !in_array($user['id'], $readBy);
             })->count();
             

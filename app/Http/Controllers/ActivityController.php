@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Services\FirestoreService;
 use App\Http\Requests\ActivityStoreRequest;
 use App\Http\Requests\ActivityUpdateRequest;
+use App\Models\Activity;
+use App\Models\User;
+use App\Models\Division;
 use Carbon\Carbon;
 
 class ActivityController extends Controller
@@ -17,11 +20,44 @@ class ActivityController extends Controller
         $this->firestore = $firestore;
     }
 
+    protected function getUsersCollection()
+    {
+        try {
+            $dbUsers = User::all();
+            if ($dbUsers->isNotEmpty()) {
+                return $dbUsers->keyBy('id')->toArray();
+            }
+        } catch (\Throwable $e) {}
+        return $this->firestore->getCollection('users');
+    }
+
+    protected function getDivisionsCollection()
+    {
+        try {
+            $dbDivisions = Division::all();
+            if ($dbDivisions->isNotEmpty()) {
+                return $dbDivisions->keyBy('id')->toArray();
+            }
+        } catch (\Throwable $e) {}
+        return $this->firestore->getCollection('divisions');
+    }
+
+    protected function getActivitiesCollection()
+    {
+        try {
+            $dbActivities = Activity::all();
+            if ($dbActivities->isNotEmpty()) {
+                return $dbActivities->keyBy('id')->toArray();
+            }
+        } catch (\Throwable $e) {}
+        return $this->firestore->getCollection('activities');
+    }
+
     public function create()
     {
         $user = session('user');
-        $users = $this->firestore->getCollection('users');
-        $divisions = collect($this->firestore->getCollection('divisions'))->keyBy('id');
+        $users = $this->getUsersCollection();
+        $divisions = collect($this->getDivisionsCollection())->keyBy('id');
         
         return view('activities.create', compact('user', 'users', 'divisions'));
     }
@@ -29,18 +65,18 @@ class ActivityController extends Controller
     public function index()
     {
         $user = session('user');
-        $users = $this->firestore->getCollection('users');
-        $divisions = $this->firestore->getCollection('divisions');
-        $activities = $this->firestore->getCollection('activities');
+        $users = $this->getUsersCollection();
+        $divisions = $this->getDivisionsCollection();
+        $activities = $this->getActivitiesCollection();
 
         return view('activities.index', compact('user', 'users', 'divisions', 'activities'));
     }
 
     public function getEvents(Request $request)
     {
-        $activities = $this->firestore->getCollection('activities');
-        $users = collect($this->firestore->getCollection('users'))->keyBy('id');
-        $divisions = collect($this->firestore->getCollection('divisions'))->keyBy('id');
+        $activities = $this->getActivitiesCollection();
+        $users = collect($this->getUsersCollection())->keyBy('id');
+        $divisions = collect($this->getDivisionsCollection())->keyBy('id');
         $teamId = $request->query('team_id');
         $events = [];
 
@@ -58,7 +94,7 @@ class ActivityController extends Controller
                 default => '#005AA9'
             };
 
-            $creator = $users->get($act['createdBy'] ?? null);
+            $creator = $users->get($act['created_by'] ?? ($act['createdBy'] ?? null));
             $creatorName = $creator ? $creator['name'] : 'Sistem';
             $creatorTeam = $creator && isset($creator['division_id']) ? ($divisions->get($creator['division_id'])['name'] ?? 'Umum') : 'Umum';
 
@@ -74,7 +110,7 @@ class ActivityController extends Controller
                 'title' => $act['title'] ?? $act['subject'] ?? 'Kegiatan BPS',
                 'start' => $act['start'] ?? ($act['start_date'] ?? null),
                 'end' => $act['end'] ?? ($act['due_date'] ?? null),
-                'allDay' => $act['allDay'] ?? true,
+                'allDay' => $act['all_day'] ?? ($act['allDay'] ?? true),
                 'resourceId' => $act['assignees'][0] ?? ($act['assignee_id'] ?? null),
                 'resourceIds' => $act['assignees'] ?? [$act['assignee_id'] ?? null],
                 'backgroundColor' => $statusColor,
@@ -84,7 +120,7 @@ class ActivityController extends Controller
                     'status' => $act['status'] ?? 'planned',
                     'category' => $act['category'] ?? 'Survei',
                     'location' => $act['location'] ?? 'BPS HQ',
-                    'createdBy' => $act['createdBy'] ?? 'system',
+                    'createdBy' => $act['created_by'] ?? ($act['createdBy'] ?? 'system'),
                     'creator_name' => $creatorName,
                     'creator_team' => $creatorTeam,
                     'project_name' => $act['project_name'] ?? 'Kegiatan Tim',
@@ -101,8 +137,8 @@ class ActivityController extends Controller
 
     public function getResources()
     {
-        $users = $this->firestore->getCollection('users');
-        $divisions = collect($this->firestore->getCollection('divisions'))->keyBy('id');
+        $users = $this->getUsersCollection();
+        $divisions = collect($this->getDivisionsCollection())->keyBy('id');
         $resources = [];
 
         foreach ($users as $u) {
@@ -127,7 +163,7 @@ class ActivityController extends Controller
         $end = Carbon::parse($request->input('end'));
         $excludeId = $request->input('exclude_id');
 
-        $activities = $this->firestore->getCollection('activities');
+        $activities = $this->getActivitiesCollection();
         $conflicts = [];
 
         foreach ($activities as $act) {
@@ -172,16 +208,21 @@ class ActivityController extends Controller
             'start_date' => Carbon::parse($validated['start'])->toDateString(),
             'due_date' => Carbon::parse($validated['end'])->toDateString(),
             'assignee_id' => $validated['assignees'][0] ?? null,
-            'createdBy' => $user['id'],
+            'created_by' => $user['id'] ?? null,
+            'createdBy' => $user['id'] ?? null,
             'division_id' => $user['division_id'] ?? null,
             'created_at' => now()->toIso8601String(),
             'updated_at' => now()->toIso8601String(),
         ]);
 
+        try {
+            Activity::updateOrCreate(['id' => $id], $payload);
+        } catch (\Throwable $e) {}
+
         $saved = $this->firestore->setDocument('activities', $id, $payload);
 
         if ($request->wantsJson()) {
-            return response()->json(['status' => 'success', 'data' => $saved]);
+            return response()->json(['status' => 'success', 'data' => $payload]);
         }
 
         return redirect()->route('activities.index')->with('success', 'Kegiatan berhasil ditambahkan.');
@@ -190,14 +231,25 @@ class ActivityController extends Controller
     public function update(ActivityUpdateRequest $request, string $id)
     {
         $user = session('user');
-        $existing = $this->firestore->getDocument('activities', $id);
+        
+        $existing = null;
+        try {
+            $model = Activity::find($id);
+            if ($model) {
+                $existing = $model->toArray();
+            }
+        } catch (\Throwable $e) {}
+
+        if (!$existing) {
+            $existing = $this->firestore->getDocument('activities', $id);
+        }
 
         if (!$existing) {
             return response()->json(['message' => 'Kegiatan tidak ditemukan'], 404);
         }
 
-        // Staff can only update activities they created or are assigned to
-        if ($user['role'] !== 'admin' && $existing['createdBy'] !== $user['id'] && !in_array($user['id'], $existing['assignees'] ?? [])) {
+        $creatorId = $existing['created_by'] ?? ($existing['createdBy'] ?? null);
+        if ($user['role'] !== 'admin' && $creatorId !== $user['id'] && !in_array($user['id'], $existing['assignees'] ?? [])) {
             return response()->json(['message' => 'Anda tidak memiliki hak akses untuk mengedit kegiatan ini.'], 403);
         }
 
@@ -215,6 +267,10 @@ class ActivityController extends Controller
             $validated['assignee_id'] = $validated['assignees'][0] ?? null;
         }
 
+        try {
+            Activity::where('id', $id)->update($validated);
+        } catch (\Throwable $e) {}
+
         $updated = $this->firestore->setDocument('activities', $id, $validated);
 
         if ($request->wantsJson()) {
@@ -227,15 +283,31 @@ class ActivityController extends Controller
     public function destroy(string $id)
     {
         $user = session('user');
-        $existing = $this->firestore->getDocument('activities', $id);
+        $existing = null;
+
+        try {
+            $model = Activity::find($id);
+            if ($model) {
+                $existing = $model->toArray();
+            }
+        } catch (\Throwable $e) {}
+
+        if (!$existing) {
+            $existing = $this->firestore->getDocument('activities', $id);
+        }
 
         if (!$existing) {
             return response()->json(['message' => 'Kegiatan tidak ditemukan'], 404);
         }
 
-        if ($user['role'] !== 'admin' && $existing['createdBy'] !== $user['id']) {
+        $creatorId = $existing['created_by'] ?? ($existing['createdBy'] ?? null);
+        if ($user['role'] !== 'admin' && $creatorId !== $user['id']) {
             return response()->json(['message' => 'Hanya admin atau pembuat kegiatan yang dapat menghapus.'], 403);
         }
+
+        try {
+            Activity::where('id', $id)->delete();
+        } catch (\Throwable $e) {}
 
         $this->firestore->deleteDocument('activities', $id);
 
@@ -245,15 +317,29 @@ class ActivityController extends Controller
     public function markNotificationRead(string $id)
     {
         $user = session('user');
-        $existing = $this->firestore->getDocument('activities', $id);
+        $existing = null;
+
+        try {
+            $model = Activity::find($id);
+            if ($model) {
+                $existing = $model->toArray();
+            }
+        } catch (\Throwable $e) {}
+
+        if (!$existing) {
+            $existing = $this->firestore->getDocument('activities', $id);
+        }
 
         if (!$existing) {
             return response()->json(['message' => 'Notifikasi tidak ditemukan'], 404);
         }
 
-        $readBy = $existing['readBy'] ?? [];
+        $readBy = $existing['read_by'] ?? ($existing['readBy'] ?? []);
         if (!in_array($user['id'], $readBy)) {
             $readBy[] = $user['id'];
+            try {
+                Activity::where('id', $id)->update(['read_by' => $readBy]);
+            } catch (\Throwable $e) {}
             $this->firestore->setDocument('activities', $id, ['readBy' => $readBy]);
         }
 
@@ -263,15 +349,29 @@ class ActivityController extends Controller
     public function deleteNotification(string $id)
     {
         $user = session('user');
-        $existing = $this->firestore->getDocument('activities', $id);
+        $existing = null;
+
+        try {
+            $model = Activity::find($id);
+            if ($model) {
+                $existing = $model->toArray();
+            }
+        } catch (\Throwable $e) {}
+
+        if (!$existing) {
+            $existing = $this->firestore->getDocument('activities', $id);
+        }
 
         if (!$existing) {
             return response()->json(['message' => 'Notifikasi tidak ditemukan'], 404);
         }
 
-        $deletedBy = $existing['deletedNotificationBy'] ?? [];
+        $deletedBy = $existing['deleted_notification_by'] ?? ($existing['deletedNotificationBy'] ?? []);
         if (!in_array($user['id'], $deletedBy)) {
             $deletedBy[] = $user['id'];
+            try {
+                Activity::where('id', $id)->update(['deleted_notification_by' => $deletedBy]);
+            } catch (\Throwable $e) {}
             $this->firestore->setDocument('activities', $id, ['deletedNotificationBy' => $deletedBy]);
         }
 

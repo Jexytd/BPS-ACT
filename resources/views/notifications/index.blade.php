@@ -16,8 +16,10 @@
             <ul class="divide-y divide-gray-200">
                 @foreach($notifications as $notif)
                 @php
-                    $creator = collect($users)->firstWhere('id', $notif['createdBy']);
-                    $isRead = in_array($user['id'], $notif['readBy'] ?? []);
+                    $creatorId = $notif['created_by'] ?? ($notif['createdBy'] ?? null);
+                    $creator = collect($users)->firstWhere('id', $creatorId);
+                    $readList = $notif['read_by'] ?? ($notif['readBy'] ?? []);
+                    $isRead = in_array($user['id'] ?? '', is_array($readList) ? $readList : []);
                 @endphp
                 <li id="page-notif-{{ $notif['id'] }}" class="p-5 flex items-start justify-between gap-4 transition hover:bg-gray-50 {{ $isRead ? 'bg-white opacity-80' : 'bg-blue-50/50' }}">
                     <div class="flex-1 cursor-pointer" @click="readNotification('{{ $notif['id'] }}')">

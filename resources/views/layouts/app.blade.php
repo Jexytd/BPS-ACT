@@ -93,9 +93,9 @@
                     <p class="text-xs text-gray-500">Single Source of Truth Kegiatan Tim BPS</p>
                 </div>
                 <div class="flex items-center gap-3">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-bps-blue border border-blue-200">
-                        <span class="w-1.5 h-1.5 rounded-full bg-bps-green mr-1.5 animate-pulse"></span>
-                        Cloud Firestore Connected
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+                        Supabase PostgreSQL Connected
                     </span>
                     @yield('header_actions')
                 </div>

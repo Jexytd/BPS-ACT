@@ -23,8 +23,10 @@
                 <ul class="divide-y divide-gray-100">
                 @foreach($recentTeamFeed as $feed)
                 @php 
-                    $creator = collect($users)->firstWhere('id', $feed['createdBy']);
-                    $isRead = in_array($user['id'], $feed['readBy'] ?? []);
+                    $creatorId = $feed['created_by'] ?? ($feed['createdBy'] ?? null);
+                    $creator = collect($users)->firstWhere('id', $creatorId);
+                    $readList = $feed['read_by'] ?? ($feed['readBy'] ?? []);
+                    $isRead = in_array($user['id'] ?? '', is_array($readList) ? $readList : []);
                 @endphp
                 <li id="notif-{{ $feed['id'] }}" class="relative group px-5 py-4 transition {{ $isRead ? 'bg-white opacity-75' : 'bg-blue-50/40' }}">
                     <div class="flex justify-between items-start gap-3">

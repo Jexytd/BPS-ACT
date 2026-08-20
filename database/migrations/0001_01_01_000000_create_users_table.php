@@ -11,14 +11,29 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // 1. Tabel Divisi / Unit Kerja BPS
+        Schema::create('divisions', function (Blueprint $table) {
+            $table->string('id')->primary(); // contoh: 'div_ipd', 'div_soc', 'div_prod'
+            $table->string('name');
+            $table->string('code')->nullable();
+            $table->string('color', 20)->default('#005AA9');
+            $table->timestamps();
+        });
+
+        // 2. Tabel Users / Pegawai BPS
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
+            $table->string('id')->primary(); // contoh: 'usr_catherine', 'usr_daphne', dll
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('role')->default('staff'); // 'admin', 'staff', 'lead'
+            $table->string('division_id')->nullable();
+            $table->string('photo')->nullable();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('password')->nullable();
             $table->rememberToken();
             $table->timestamps();
+
+            $table->foreign('division_id')->references('id')->on('divisions')->onDelete('set null');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
@@ -29,7 +44,7 @@ return new class extends Migration
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
+            $table->string('user_id')->nullable()->index();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');
@@ -42,8 +57,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
+        Schema::dropIfExists('divisions');
     }
 };

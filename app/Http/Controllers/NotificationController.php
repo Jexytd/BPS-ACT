@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\FirestoreService;
+use App\Models\Activity;
+use App\Models\User;
 use Carbon\Carbon;
 
 class NotificationController extends Controller
@@ -18,10 +20,30 @@ class NotificationController extends Controller
     public function index()
     {
         $user = session('user');
-        $users = collect($this->firestore->getCollection('users'))->keyBy('id');
+
+        try {
+            $dbUsers = User::all();
+            if ($dbUsers->isNotEmpty()) {
+                $users = $dbUsers->keyBy('id')->toArray();
+            } else {
+                $users = collect($this->firestore->getCollection('users'))->keyBy('id');
+            }
+        } catch (\Throwable $e) {
+            $users = collect($this->firestore->getCollection('users'))->keyBy('id');
+        }
         
         $myDivisionId = $user['division_id'] ?? null;
-        $activities = collect($this->firestore->getCollection('activities'));
+        
+        try {
+            $dbActivities = Activity::all();
+            if ($dbActivities->isNotEmpty()) {
+                $activities = collect($dbActivities->keyBy('id')->toArray());
+            } else {
+                $activities = collect($this->firestore->getCollection('activities'));
+            }
+        } catch (\Throwable $e) {
+            $activities = collect($this->firestore->getCollection('activities'));
+        }
         
         $notifications = collect();
 
@@ -34,8 +56,8 @@ class NotificationController extends Controller
                 }
                 
                 // Exclude if user has deleted this notification
-                $deletedBy = $act['deletedNotificationBy'] ?? [];
-                if (in_array($user['id'], $deletedBy)) {
+                $deletedBy = $act['deleted_notification_by'] ?? ($act['deletedNotificationBy'] ?? []);
+                if (is_array($deletedBy) && in_array($user['id'] ?? '', $deletedBy)) {
                     return false;
                 }
                 

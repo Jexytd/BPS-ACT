@@ -69,23 +69,59 @@ class FirestoreService
                     ]
                 ],
                 'divisions' => [
-                    'div_soc' => [
-                        'id' => 'div_soc',
-                        'name' => 'Statistik Sosial',
-                        'code' => 'SOC',
+                    'div_ipds' => [
+                        'id' => 'div_ipds',
+                        'name' => 'Tim Kerja Pengolahan dan Teknologi Informasi',
+                        'code' => 'IPDS',
+                        'color' => '#00A6B4'
+                    ],
+                    'div_nerwilis' => [
+                        'id' => 'div_nerwilis',
+                        'name' => 'Tim Kerja Nerwilis dan Tim Kerja UKP',
+                        'code' => 'NERWILIS',
                         'color' => '#005AA9'
                     ],
-                    'div_ipd' => [
-                        'id' => 'div_ipd',
-                        'name' => 'Integrasi Pengolahan Data',
-                        'code' => 'IPD',
-                        'color' => '#00A6B4'
+                    'div_pss' => [
+                        'id' => 'div_pss',
+                        'name' => 'Tim Pembinaan Statistik Sektoral',
+                        'code' => 'PSS',
+                        'color' => '#7C3AED'
                     ],
                     'div_prod' => [
                         'id' => 'div_prod',
-                        'name' => 'Statistik Produksi',
+                        'name' => 'Tim Kerja Statistik Produksi',
                         'code' => 'PROD',
-                        'color' => '#6DBE45'
+                        'color' => '#16A34A'
+                    ],
+                    'div_mitra' => [
+                        'id' => 'div_mitra',
+                        'name' => 'Tim Kerja Manajemen Lapangan dan Mitra',
+                        'code' => 'MITRA',
+                        'color' => '#EA580C'
+                    ],
+                    'div_dist' => [
+                        'id' => 'div_dist',
+                        'name' => 'Tim Kerja Statistik Distribusi',
+                        'code' => 'DIST',
+                        'color' => '#0284C7'
+                    ],
+                    'div_sensus' => [
+                        'id' => 'div_sensus',
+                        'name' => 'Tim Kerja Sensus dan Pengembangan Survei',
+                        'code' => 'SENSUS',
+                        'color' => '#D97706'
+                    ],
+                    'div_diseminasi' => [
+                        'id' => 'div_diseminasi',
+                        'name' => 'Tim Kerja Diseminasi Statistik dan Hubungan Masyarakat',
+                        'code' => 'DISEMINASI',
+                        'color' => '#DB2777'
+                    ],
+                    'div_kualitas' => [
+                        'id' => 'div_kualitas',
+                        'name' => 'Tim Kerja Penjaminan Kualitas dan Manajemen Resiko',
+                        'code' => 'PKMR',
+                        'color' => '#4B5563'
                     ]
                 ],
                 'activities' => [
