@@ -18,6 +18,7 @@
         "axios": "^1.19.0",
         "fullcalendar": "^7.0.2",
         "fullcalendar-scheduler": "^7.0.2",
-        "temporal-polyfill": "^1.0.4"
+        "temporal-polyfill": "^1.0.4",
+        "vercel-php": "^0.9.0"
     }
 }
