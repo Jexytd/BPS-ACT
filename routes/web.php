@@ -13,6 +13,15 @@ Route::get('/register', [AuthController::class, 'showRegister'])->name('register
 Route::post('/register', [AuthController::class, 'register']);
 Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
+Route::get('/test-vercel', function () {
+    return response()->json([
+        'status' => 'ok',
+        'php' => PHP_VERSION,
+        'laravel' => app()->version(),
+        'environment' => app()->environment(),
+    ]);
+});
+
 // Protected Routes
 Route::middleware([EnsureAuthenticated::class])->group(function () {
     Route::get('/', [DashboardController::class, 'index']);
