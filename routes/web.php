@@ -6,8 +6,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Middleware\EnsureAuthenticated;
 
-Route::get('/', function () {
-    return 'ROOT OK';
+Route::get('/test-view', function () {
+    return view('welcome');
 });
 
 // Auth Routes
