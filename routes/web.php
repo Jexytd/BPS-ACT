@@ -22,6 +22,24 @@ Route::get('/test-vercel', function () {
     ]);
 });
 
+Route::get('/test-db', function () {
+    try {
+        \DB::connection()->getPdo();
+
+        return response()->json([
+            'status' => 'ok',
+            'database' => 'connected',
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ], 500);
+    }
+});
+
 // Protected Routes
 Route::middleware([EnsureAuthenticated::class])->group(function () {
     Route::get('/', [DashboardController::class, 'index']);
