@@ -1,3 +1,3 @@
 <?php
 
-echo "PHP Vercel berhasil!";
+echo "PHP BERHASIL";
