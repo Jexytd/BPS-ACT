@@ -10,6 +10,13 @@ Route::get('/test-view', function () {
     return view('welcome');
 });
 
+Route::get('/test-auth', function () {
+    return response()->json([
+        'status' => 'ok',
+        'user' => auth()->user(),
+    ]);
+})->middleware(EnsureAuthenticated::class);
+
 // Auth Routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
