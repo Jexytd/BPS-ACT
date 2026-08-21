@@ -6,39 +6,16 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Middleware\EnsureAuthenticated;
 
+Route::get('/', function () {
+    return 'ROOT OK';
+});
+
 // Auth Routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
 Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
-
-Route::get('/test-vercel', function () {
-    return response()->json([
-        'status' => 'ok',
-        'php' => PHP_VERSION,
-        'laravel' => app()->version(),
-        'environment' => app()->environment(),
-    ]);
-});
-
-Route::get('/test-db', function () {
-    try {
-        \DB::connection()->getPdo();
-
-        return response()->json([
-            'status' => 'ok',
-            'database' => 'connected',
-        ]);
-    } catch (\Throwable $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-        ], 500);
-    }
-});
 
 // Protected Routes
 Route::middleware([EnsureAuthenticated::class])->group(function () {
