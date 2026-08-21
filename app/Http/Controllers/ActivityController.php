@@ -62,14 +62,73 @@ class ActivityController extends Controller
         return view('activities.create', compact('user', 'users', 'divisions'));
     }
 
-    public function index()
+    public function edit(string $id)
     {
         $user = session('user');
-        $users = $this->getUsersCollection();
-        $divisions = $this->getDivisionsCollection();
-        $activities = $this->getActivitiesCollection();
+        
+        $activity = null;
+        try {
+            $model = Activity::find($id);
+            if ($model) {
+                $activity = $model->toArray();
+            }
+        } catch (\Throwable $e) {}
 
-        return view('activities.index', compact('user', 'users', 'divisions', 'activities'));
+        if (!$activity) {
+            $activity = $this->firestore->getDocument('activities', $id);
+        }
+
+        if (!$activity) {
+            return redirect()->route('activities.index')->with('error', 'Kegiatan tidak ditemukan');
+        }
+
+        $users = $this->getUsersCollection();
+        $divisions = collect($this->getDivisionsCollection())->keyBy('id');
+        
+        return view('activities.edit', compact('user', 'activity', 'users', 'divisions'));
+    }
+
+    public function index()
+    {
+        return redirect()->route('dashboard');
+    }
+
+    public function list()
+    {
+        $user = session('user');
+        $users = collect($this->getUsersCollection())->keyBy('id');
+        $divisions = collect($this->getDivisionsCollection())->keyBy('id');
+        
+        $activities = collect($this->getActivitiesCollection())->map(function($act) use ($users, $divisions) {
+            $creator = $users->get($act['created_by'] ?? ($act['createdBy'] ?? null));
+            $act['creator_name'] = $creator ? $creator['name'] : 'Sistem';
+            $act['creator_team'] = $creator && isset($creator['division_id']) ? ($divisions->get($creator['division_id'])['name'] ?? 'Umum') : ($divisions->get($act['division_id'] ?? '')['name'] ?? 'Umum');
+            
+            $actAssignees = $act['assignees'] ?? [$act['assignee_id'] ?? null];
+            $act['assignees_rich'] = collect($actAssignees)->filter()->map(function($id) use ($users, $divisions) {
+                $u = $users->get($id);
+                if (!$u) return ['name' => $id, 'team' => 'Unknown', 'avatar' => null, 'initials' => 'U'];
+                $div = $divisions->get($u['division_id'] ?? '')['name'] ?? 'Umum';
+                return [
+                    'name' => $u['name'],
+                    'team' => $div,
+                    'avatar' => $u['photo'] ?? null,
+                    'initials' => strtoupper(substr($u['name'], 0, 2))
+                ];
+            })->values()->toArray();
+            return $act;
+        })->sortByDesc('start_date')->values();
+
+        return view('activities.list', compact('user', 'activities', 'divisions'));
+    }
+
+    public function calendarTest()
+    {
+        $user = session('user');
+        $users = collect($this->getUsersCollection())->keyBy('id');
+        $divisions = collect($this->getDivisionsCollection())->keyBy('id');
+
+        return view('activities.calendar_test', compact('user', 'users', 'divisions'));
     }
 
     public function getEvents(Request $request)
@@ -99,18 +158,44 @@ class ActivityController extends Controller
             $creatorTeam = $creator && isset($creator['division_id']) ? ($divisions->get($creator['division_id'])['name'] ?? 'Umum') : 'Umum';
 
             $actAssignees = $act['assignees'] ?? [$act['assignee_id'] ?? null];
-            $assigneesNames = collect($actAssignees)
-                ->filter()
-                ->map(fn($id) => $users->get($id)['name'] ?? $id)
-                ->values()
-                ->toArray();
+            $assigneesNames = [];
+            $assigneesRich = [];
+            foreach (collect($actAssignees)->filter() as $id) {
+                $u = $users->get($id);
+                if (!$u) {
+                    $assigneesNames[] = $id;
+                    $assigneesRich[] = ['name' => $id, 'team' => 'Unknown', 'avatar' => null, 'initials' => 'U'];
+                    continue;
+                }
+                $div = $divisions->get($u['division_id'] ?? '')['name'] ?? 'Umum';
+                $assigneesNames[] = $u['name'];
+                $assigneesRich[] = [
+                    'name' => $u['name'],
+                    'team' => $div,
+                    'avatar' => $u['photo'] ?? null,
+                    'initials' => strtoupper(substr($u['name'], 0, 2))
+                ];
+            }
+
+            $startRaw = $act['start'] ?? ($act['start_date'] ?? null);
+            $endRaw = $act['end'] ?? ($act['due_date'] ?? null);
+
+            $start = $startRaw;
+            if ($startRaw && (strlen($startRaw) === 10 || str_ends_with($startRaw, '00:00:00') || str_ends_with($startRaw, '00:00:00Z'))) {
+                $start = substr($startRaw, 0, 10) . 'T07:30:00';
+            }
+
+            $end = $endRaw;
+            if ($endRaw && (strlen($endRaw) === 10 || str_ends_with($endRaw, '00:00:00') || str_ends_with($endRaw, '00:00:00Z'))) {
+                $end = substr($endRaw, 0, 10) . 'T16:30:00';
+            }
 
             $events[] = [
                 'id' => (string) $act['id'],
                 'title' => $act['title'] ?? $act['subject'] ?? 'Kegiatan BPS',
-                'start' => $act['start'] ?? ($act['start_date'] ?? null),
-                'end' => $act['end'] ?? ($act['due_date'] ?? null),
-                'allDay' => $act['all_day'] ?? ($act['allDay'] ?? true),
+                'start' => $start,
+                'end' => $end,
+                'allDay' => false,
                 'resourceId' => $act['assignees'][0] ?? ($act['assignee_id'] ?? null),
                 'resourceIds' => $act['assignees'] ?? [$act['assignee_id'] ?? null],
                 'backgroundColor' => $statusColor,
@@ -126,8 +211,10 @@ class ActivityController extends Controller
                     'project_name' => $act['project_name'] ?? 'Kegiatan Tim',
                     'assignees' => $act['assignees'] ?? [$act['assignee_id'] ?? null],
                     'assignees_names' => $assigneesNames,
+                    'assignees_rich' => $assigneesRich,
                     'result' => $act['result'] ?? '',
                     'documents' => $act['documents'] ?? null,
+                    'documents_links' => $act['documents_links'] ?? null,
                 ]
             ];
         }
@@ -135,13 +222,17 @@ class ActivityController extends Controller
         return response()->json($events);
     }
 
-    public function getResources()
+    public function getResources(Request $request)
     {
         $users = $this->getUsersCollection();
         $divisions = collect($this->getDivisionsCollection())->keyBy('id');
+        $teamId = $request->query('team_id');
         $resources = [];
 
         foreach ($users as $u) {
+            if ($teamId && ($u['division_id'] ?? null) !== $teamId) {
+                continue;
+            }
             $div = $divisions->get($u['division_id'] ?? '') ?? ['name' => 'Umum'];
             $resources[] = [
                 'id' => (string) $u['id'],
@@ -201,12 +292,13 @@ class ActivityController extends Controller
         $user = session('user');
         $validated = $request->validated();
 
-        $id = (string) rand(100, 9999);
+        $id = (string) \Illuminate\Support\Str::uuid();
         $payload = array_merge($validated, [
             'id' => $id,
             'subject' => $validated['title'],
             'start_date' => Carbon::parse($validated['start'])->toDateString(),
             'due_date' => Carbon::parse($validated['end'])->toDateString(),
+            'all_day' => $validated['allDay'] ?? false,
             'assignee_id' => $validated['assignees'][0] ?? null,
             'created_by' => $user['id'] ?? null,
             'createdBy' => $user['id'] ?? null,
@@ -262,6 +354,9 @@ class ActivityController extends Controller
         }
         if (isset($validated['end'])) {
             $validated['due_date'] = Carbon::parse($validated['end'])->toDateString();
+        }
+        if (isset($validated['allDay'])) {
+            $validated['all_day'] = $validated['allDay'];
         }
         if (isset($validated['assignees'])) {
             $validated['assignee_id'] = $validated['assignees'][0] ?? null;

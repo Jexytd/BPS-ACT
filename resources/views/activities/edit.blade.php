@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Buat Kegiatan Baru — BPS ACT')
-@section('header_title', 'Input Kegiatan / Aktivitas Tim Baru')
+@section('title', 'Edit Kegiatan — BPS ACT')
+@section('header_title', 'Edit Kegiatan / Aktivitas Tim')
 
 @section('content')
 <div x-data="activityWizard" x-init="initWizard" class="max-w-4xl mx-auto py-6 px-4 sm:px-6">
@@ -30,13 +30,13 @@
             <div class="relative z-10 flex items-start justify-between">
                 <template x-for="i in 4" :key="i">
 
-                    <div class="flex flex-col items-center cursor-pointer" @click="if (i < step) step = i">
+                    <div class="flex flex-col items-center cursor-pointer group" @click="step = i">
 
                         <!-- Number -->
                         <div
                             :class="step >= i
-                                ? 'bg-bps-blue text-white border-bps-blue shadow-md'
-                                : 'bg-white text-gray-400 border-gray-200'"
+                                ? 'bg-bps-blue text-white border-bps-blue shadow-md group-hover:bg-bps-teal'
+                                : 'bg-white text-gray-400 border-gray-200 group-hover:border-bps-blue group-hover:text-bps-blue'"
                             class="w-12 h-12 rounded-full
                                 flex items-center justify-center
                                 font-bold border-2
@@ -179,7 +179,7 @@
 
             <!-- Step 4: Konfirmasi -->
             <div x-show="step === 4" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-x-8" x-transition:enter-end="opacity-100 translate-x-0" style="display: none;">
-                <h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-6">Konfirmasi Kegiatan</h2>
+                <h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-6">Konfirmasi Perubahan Kegiatan</h2>
 
                 <div class="bg-gray-50 p-4 sm:p-5 rounded-lg border border-gray-200 text-sm divide-y divide-gray-200">
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-2 py-3 first:pt-0">
@@ -234,7 +234,7 @@
 
                     <button type="submit" x-show="step === 4" :disabled="isSubmitting"
                             class="px-6 py-2.5 bg-bps-green text-white font-semibold rounded-lg hover:bg-green-600 transition shadow-xs flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span x-show="!isSubmitting">Simpan Kegiatan</span>
+                        <span x-show="!isSubmitting">Simpan Perubahan</span>
                         <span x-show="isSubmitting">Menyimpan...</span>
                         <svg x-show="isSubmitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -265,77 +265,33 @@
                 laporan: 'Laporan / Dokumentasi'
             },
             form: {
-                title: '',
-                category: '',
-                description: '',
-                start: '',
-                end: '',
-                location: '',
-                allDay: false,
-                status: 'planned',
-                assignees: [],
+                id: {!! json_encode((string)($activity['id'] ?? '')) !!},
+                title: {!! json_encode($activity['title'] ?? ($activity['subject'] ?? '')) !!},
+                category: {!! json_encode($activity['category'] ?? '') !!},
+                description: {!! json_encode($activity['description'] ?? '') !!},
+                start: {!! json_encode($activity['start'] ?? ($activity['start_date'] ?? '')) !!},
+                end: {!! json_encode($activity['end'] ?? ($activity['due_date'] ?? '')) !!},
+                location: {!! json_encode($activity['location'] ?? '') !!},
+                allDay: {{ !empty($activity['all_day']) || !empty($activity['allDay']) ? 'true' : 'false' }},
+                status: {!! json_encode($activity['status'] ?? 'planned') !!},
+                assignees: {!! json_encode(array_values(array_filter($activity['assignees'] ?? [$activity['assignee_id'] ?? null]))) !!},
                 documents: {
-                    surat_tugas: false,
-                    undangan: false,
-                    kuesioner: false,
-                    berita_acara: false,
-                    laporan: false
+                    surat_tugas: {{ !empty($activity['documents_links']['surat_tugas']) || !empty($activity['documents']['surat_tugas']) ? 'true' : 'false' }},
+                    undangan: {{ !empty($activity['documents_links']['undangan']) || !empty($activity['documents']['undangan']) ? 'true' : 'false' }},
+                    kuesioner: {{ !empty($activity['documents_links']['kuesioner']) || !empty($activity['documents']['kuesioner']) ? 'true' : 'false' }},
+                    berita_acara: {{ !empty($activity['documents_links']['berita_acara']) || !empty($activity['documents']['berita_acara']) ? 'true' : 'false' }},
+                    laporan: {{ !empty($activity['documents_links']['laporan']) || !empty($activity['documents']['laporan']) ? 'true' : 'false' }}
                 },
-                documents_links: {
-                    surat_tugas: '',
-                    undangan: '',
-                    kuesioner: '',
-                    berita_acara: '',
-                    laporan: ''
-                },
-                result: ''
+                documents_links: {!! json_encode($activity['documents_links'] ?? [
+                    'surat_tugas' => $activity['documents']['surat_tugas'] ?? '',
+                    'undangan' => $activity['documents']['undangan'] ?? '',
+                    'kuesioner' => $activity['documents']['kuesioner'] ?? '',
+                    'berita_acara' => $activity['documents']['berita_acara'] ?? '',
+                    'laporan' => $activity['documents']['laporan'] ?? ''
+                ]) !!}
             },
             initWizard() {
-                const urlParams = new URLSearchParams(window.location.search);
-                const queryStart = urlParams.get('start');
-                const queryEnd = urlParams.get('end');
-
-                const now = new Date();
-                const year = now.getFullYear();
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const day = String(now.getDate()).padStart(2, '0');
-
-                if (queryStart) {
-                    if (queryStart.length === 10) {
-                        this.form.start = queryStart + 'T08:00';
-                    } else {
-                        this.form.start = queryStart.substring(0, 16);
-                    }
-                } else {
-                    this.form.start = `${year}-${month}-${day}T08:00`;
-                }
-
-                if (queryEnd) {
-                    if (queryEnd.length === 10) {
-                        this.form.end = queryEnd + 'T16:00';
-                    } else {
-                        this.form.end = queryEnd.substring(0, 16);
-                    }
-                } else {
-                    if (queryStart) {
-                        const st = new Date(this.form.start);
-                        st.setHours(st.getHours() + 1);
-                        const ey = st.getFullYear();
-                        const em = String(st.getMonth() + 1).padStart(2, '0');
-                        const ed = String(st.getDate()).padStart(2, '0');
-                        const eh = String(st.getHours()).padStart(2, '0');
-                        const emin = String(st.getMinutes()).padStart(2, '0');
-                        this.form.end = `${ey}-${em}-${ed}T${eh}:${emin}`;
-                    } else {
-                        this.form.end = `${year}-${month}-${day}T16:00`;
-                    }
-                }
-
-                // Add current user to assignees by default if they exist
-                const userId = "{{ session('user')['id'] ?? '' }}";
-                if (userId) {
-                    this.form.assignees = [userId];
-                }
+                // For edit mode, we don't automatically set default dates as they come from data
             },
             validateStep() {
                 if (this.step === 1) {
@@ -400,7 +356,8 @@
                     body: JSON.stringify({
                         start: this.form.start,
                         end: this.form.end,
-                        assignees: this.form.assignees
+                        assignees: this.form.assignees,
+                        activity_id: this.form.id
                     })
                 })
                 .then(res => res.json())
@@ -413,8 +370,33 @@
                 })
                 .catch(err => console.error(err));
             },
+            validateAll() {
+                if (!this.form.title || !this.form.category) {
+                    alert('Mohon isi Judul Kegiatan dan Kategori pada Step 1.');
+                    this.step = 1;
+                    return false;
+                }
+                if (!this.form.start || !this.form.end || !this.form.location) {
+                    alert('Mohon isi Waktu Mulai, Waktu Selesai, dan Lokasi pada Step 2.');
+                    this.step = 2;
+                    return false;
+                }
+                if (new Date(this.form.end) <= new Date(this.form.start)) {
+                    alert('Waktu selesai harus lebih dari waktu mulai pada Step 2.');
+                    this.step = 2;
+                    return false;
+                }
+                if (!this.form.assignees || this.form.assignees.length === 0) {
+                    alert('Mohon pilih minimal 1 anggota tim / penanggung jawab pada Step 3.');
+                    this.step = 3;
+                    return false;
+                }
+                return true;
+            },
             submitWizard() {
-                if (!this.validateStep()) return;
+                if (!this.validateAll()) return;
+
+                this.isSubmitting = true;
 
                 // Clean empty URLs to null to satisfy validation
                 const cleanDocsLinks = {};
@@ -432,8 +414,8 @@
                     documents_links: Object.keys(cleanDocsLinks).length > 0 ? cleanDocsLinks : null
                 };
 
-                fetch('/api/activities', {
-                    method: 'POST',
+                fetch(`/api/activities/${this.form.id}`, {
+                    method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
@@ -441,9 +423,10 @@
                     },
                     body: JSON.stringify(payload)
                 })
-                .then(res => {
-                    if (!res.ok) throw new Error('Gagal menyimpan kegiatan');
-                    return res.json();
+                .then(async res => {
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || 'Gagal menyimpan perubahan');
+                    return data;
                 })
                 .then(data => {
                     window.location.href = "{{ route('activities.index') }}";

@@ -14,13 +14,10 @@
         "vite": "^8.0.0"
     },
     "dependencies": {
-        "@fullcalendar/core": "^6.1.21",
-        "@fullcalendar/daygrid": "^6.1.21",
-        "@fullcalendar/interaction": "^6.1.21",
-        "@fullcalendar/resource": "^6.1.21",
-        "@fullcalendar/resource-timeline": "^6.1.21",
-        "@fullcalendar/timegrid": "^6.1.21",
         "alpinejs": "^3.15.12",
-        "axios": "^1.19.0"
+        "axios": "^1.19.0",
+        "fullcalendar": "^7.0.2",
+        "fullcalendar-scheduler": "^7.0.2",
+        "temporal-polyfill": "^1.0.4"
     }
 }

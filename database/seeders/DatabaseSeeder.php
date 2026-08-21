@@ -187,5 +187,8 @@ class DatabaseSeeder extends Seeder
         foreach ($activities as $act) {
             Activity::updateOrCreate(['id' => $act['id']], $act);
         }
+
+        // 4. Seed Assets
+        $this->call(AssetSeeder::class);
     }
 }

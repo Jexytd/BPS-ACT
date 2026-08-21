@@ -30,6 +30,7 @@ class Activity extends Model
         'assignees',
         'result',
         'documents',
+        'documents_links',
         'read_by',
         'deleted_notification_by',
     ];
@@ -38,6 +39,7 @@ class Activity extends Model
         'all_day' => 'boolean',
         'assignees' => 'array',
         'documents' => 'array',
+        'documents_links' => 'array',
         'read_by' => 'array',
         'deleted_notification_by' => 'array',
         'start_date' => 'date:Y-m-d',
