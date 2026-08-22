@@ -8,10 +8,7 @@ use Illuminate\Http\Request;
 $isVercel = isset($_SERVER['VERCEL']) || isset($_ENV['VERCEL']) || file_exists('/tmp');
 $storagePath = $isVercel ? '/tmp/storage' : dirname(__DIR__).'/storage';
 
-$app = Application::configure(
-        basePath: dirname(__DIR__),
-        storagePath: $storagePath
-    )
+$app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
