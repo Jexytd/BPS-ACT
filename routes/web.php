@@ -17,6 +17,14 @@ Route::get('/test-auth', function () {
     ]);
 })->middleware(EnsureAuthenticated::class);
 
+// Public Landing Homepage
+Route::get('/', function () {
+    if (auth()->check() || session()->has('user')) {
+        return redirect()->route('dashboard');
+    }
+    return view('home');
+})->name('home');
+
 // Auth Routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -26,8 +34,8 @@ Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->nam
 
 // Protected Routes
 Route::middleware([EnsureAuthenticated::class])->group(function () {
-    Route::get('/', [DashboardController::class, 'index']);
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
 
     Route::get('/activities/create', [ActivityController::class, 'create'])->name('activities.create');
     Route::get('/activities/list', [ActivityController::class, 'list'])->name('activities.list');
