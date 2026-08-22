@@ -23,9 +23,11 @@ foreach ($dirs as $dir) {
 }
 
 // Forward serverless environment variables if needed
+putenv("LARAVEL_STORAGE_PATH={$tmpStorage}");
 putenv("VIEW_COMPILED_PATH={$tmpStorage}/framework/views");
 putenv("SESSION_DRIVER=" . (getenv('SESSION_DRIVER') ?: 'cookie'));
 putenv("CACHE_STORE=" . (getenv('CACHE_STORE') ?: 'array'));
 putenv("LOG_CHANNEL=" . (getenv('LOG_CHANNEL') ?: 'stderr'));
+
 
 require __DIR__.'/../public/index.php';
