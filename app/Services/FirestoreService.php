@@ -14,7 +14,10 @@ class FirestoreService
 
     public function __construct()
     {
-        $this->storagePath = storage_path('app/firestore_local_store.json');
+        $this->storagePath = (isset($_SERVER['VERCEL']) || isset($_ENV['VERCEL']) || file_exists('/tmp'))
+            ? '/tmp/storage/app/firestore_local_store.json'
+            : storage_path('app/firestore_local_store.json');
+
 
         try {
             if (class_exists(\Google\Cloud\Firestore\FirestoreClient::class)) {
