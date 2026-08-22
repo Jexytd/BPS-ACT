@@ -14,19 +14,29 @@ class FirestoreService
 
     public function __construct()
     {
-        $this->storagePath = storage_path('app/firestore_local.json');
-        
+        $this->storagePath = storage_path('app/firestore_local_store.json');
+
         try {
-            if (config('firebase.projects.app.credentials') && file_exists(config('firebase.projects.app.credentials'))) {
-                $this->database = Firebase::project('app')->firestore()->database();
+            if (class_exists(\Google\Cloud\Firestore\FirestoreClient::class)) {
+                $this->database = Firebase::project('app')
+                    ->firestore()
+                    ->database();
+
+                Log::info('Firestore connection initialized successfully.', [
+                    'project_id' => config('firebase.projects.app.project_id', 'bpsact-e8fc3'),
+                ]);
             } else {
                 $this->isLocalFallback = true;
                 $this->ensureLocalStoreExists();
+                Log::info('Firestore client class not found. Using local JSON store fallback.');
             }
         } catch (\Throwable $e) {
-            Log::warning('Firestore connection fallback to local storage: ' . $e->getMessage());
             $this->isLocalFallback = true;
             $this->ensureLocalStoreExists();
+            Log::warning('Firestore initialization failed. Falling back to local store.', [
+                'message' => $e->getMessage(),
+                'exception' => get_class($e),
+            ]);
         }
     }
 
@@ -231,84 +241,155 @@ class FirestoreService
         File::put($this->storagePath, json_encode($data, JSON_PRETTY_PRINT));
     }
 
+    /**
+     * Get all documents from a Firestore collection.
+     */
     public function getCollection(string $collection): array
     {
-        if ($this->isLocalFallback) {
+        if ($this->isLocalFallback || !$this->database) {
             $data = $this->getLocalData();
             return array_values($data[$collection] ?? []);
         }
 
         try {
-            $snapshot = $this->database->collection($collection)->documents();
+            $snapshot = $this->database
+                ->collection($collection)
+                ->documents();
+
             $results = [];
+
             foreach ($snapshot as $document) {
                 if ($document->exists()) {
-                    $results[] = array_merge(['id' => (string) $document->id()], $document->data());
+                    $results[] = array_merge(
+                        ['id' => (string) $document->id()],
+                        $document->data()
+                    );
                 }
             }
+
             return $results;
         } catch (\Throwable $e) {
-            Log::error("Firestore getCollection error for {$collection}: " . $e->getMessage());
+            Log::error("Firestore getCollection error for {$collection}", [
+                'message' => $e->getMessage(),
+            ]);
+
             $data = $this->getLocalData();
             return array_values($data[$collection] ?? []);
         }
     }
 
+    /**
+     * Get a single Firestore document.
+     */
     public function getDocument(string $collection, string $id): ?array
     {
-        if ($this->isLocalFallback) {
+        if ($this->isLocalFallback || !$this->database) {
             $data = $this->getLocalData();
             return $data[$collection][$id] ?? null;
         }
 
         try {
-            $doc = $this->database->collection($collection)->document($id)->snapshot();
-            return $doc->exists() ? array_merge(['id' => (string) $doc->id()], $doc->data()) : null;
+            $document = $this->database
+                ->collection($collection)
+                ->document($id)
+                ->snapshot();
+
+            if (!$document->exists()) {
+                return null;
+            }
+
+            return array_merge(
+                ['id' => (string) $document->id()],
+                $document->data()
+            );
         } catch (\Throwable $e) {
+            Log::error("Firestore getDocument error for {$collection}/{$id}", [
+                'message' => $e->getMessage(),
+            ]);
+
             $data = $this->getLocalData();
             return $data[$collection][$id] ?? null;
         }
     }
 
-    public function setDocument(string $collection, string $id, array $payload): array
-    {
-        $payload['updated_at'] = now()->toIso8601String();
-        
-        if ($this->isLocalFallback) {
+    /**
+     * Create or update a Firestore document.
+     */
+    public function setDocument(
+        string $collection,
+        string $id,
+        array $payload
+    ): array {
+        $now = now()->toIso8601String();
+        $payload['updated_at'] = $now;
+
+        if ($this->isLocalFallback || !$this->database) {
             $data = $this->getLocalData();
-            $data[$collection][$id] = array_merge(['id' => (string) $id], $payload);
+            $existing = $data[$collection][$id] ?? [];
+            $merged = array_merge($existing, ['id' => (string) $id], $payload);
+            $data[$collection][$id] = $merged;
             $this->saveLocalData($data);
-            return $data[$collection][$id];
+            return $merged;
         }
 
         try {
-            $this->database->collection($collection)->document($id)->set($payload, ['merge' => true]);
-            return array_merge(['id' => (string) $id], $payload);
+            $this->database
+                ->collection($collection)
+                ->document($id)
+                ->set($payload, [
+                    'merge' => true,
+                ]);
+
+            return array_merge(
+                ['id' => (string) $id],
+                $payload
+            );
         } catch (\Throwable $e) {
-            Log::error("Firestore setDocument error for {$collection}/{$id}: " . $e->getMessage());
+            Log::error("Firestore setDocument error for {$collection}/{$id}", [
+                'message' => $e->getMessage(),
+            ]);
+
             $data = $this->getLocalData();
-            $data[$collection][$id] = array_merge(['id' => (string) $id], $payload);
+            $existing = $data[$collection][$id] ?? [];
+            $merged = array_merge($existing, ['id' => (string) $id], $payload);
+            $data[$collection][$id] = $merged;
             $this->saveLocalData($data);
-            return $data[$collection][$id];
+            return $merged;
         }
     }
 
+
+    /**
+     * Delete a Firestore document.
+     */
     public function deleteDocument(string $collection, string $id): bool
     {
-        if ($this->isLocalFallback) {
+        if ($this->isLocalFallback || !$this->database) {
             $data = $this->getLocalData();
-            unset($data[$collection][$id]);
-            $this->saveLocalData($data);
+            if (isset($data[$collection][$id])) {
+                unset($data[$collection][$id]);
+                $this->saveLocalData($data);
+            }
             return true;
         }
 
         try {
-            $this->database->collection($collection)->document($id)->delete();
+            $this->database
+                ->collection($collection)
+                ->document($id)
+                ->delete();
+
             return true;
         } catch (\Throwable $e) {
+            Log::error("Firestore deleteDocument error for {$collection}/{$id}", [
+                'message' => $e->getMessage(),
+            ]);
+
             $data = $this->getLocalData();
-            unset($data[$collection][$id]);
-            $this->saveLocalData($data);
+            if (isset($data[$collection][$id])) {
+                unset($data[$collection][$id]);
+                $this->saveLocalData($data);
+            }
             return true;
         }
     }
@@ -317,5 +398,30 @@ class FirestoreService
     {
         $this->ensureLocalStoreExists();
         return true;
+    }
+
+    /**
+     * Test Firestore connection.
+     */
+    public function testConnection(): bool
+    {
+        if ($this->isLocalFallback || !$this->database) {
+            return false;
+        }
+
+        try {
+            $this->database
+                ->collection('__system')
+                ->document('__connection_test')
+                ->snapshot();
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Firestore connection test failed.', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 }

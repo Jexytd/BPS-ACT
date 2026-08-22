@@ -50,7 +50,22 @@ return [
              *
              */
 
-            'credentials' => env('FIREBASE_CREDENTIALS', env('GOOGLE_APPLICATION_CREDENTIALS')),
+            'credentials' => (function () {
+                if ($credentials = env('FIREBASE_CREDENTIALS', env('GOOGLE_APPLICATION_CREDENTIALS'))) {
+                    return $credentials;
+                }
+                if ($jsonBase64 = env('FIREBASE_CREDENTIALS_JSON')) {
+                    $decoded = base64_decode($jsonBase64);
+                    if ($decoded && json_validate($decoded)) {
+                        return json_decode($decoded, true);
+                    }
+                }
+                $filePath = storage_path('app/firebase-service-account.json');
+                if (file_exists($filePath)) {
+                    return $filePath;
+                }
+                return null;
+            })(),
 
             /*
              * ------------------------------------------------------------------------
@@ -79,7 +94,10 @@ return [
                  * https://firebase.google.com/docs/firestore/manage-databases
                  */
 
-                // 'database' => env('FIREBASE_FIRESTORE_DATABASE'),
+                'database' => env(
+                    'FIREBASE_FIRESTORE_DATABASE',
+                    '(default)'
+                ),
             ],
 
             /*

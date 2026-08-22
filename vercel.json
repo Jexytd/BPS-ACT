@@ -12,8 +12,8 @@
     ],
     "routes": [
         {
-            "src": "/(css|js)/(.*)",
-            "dest": "public/$1/$2"
+            "src": "/(css|js|images|build|assets|favicon.ico|robots.txt|.*\\.(?:css|js|svg|png|jpg|jpeg|gif|ico|webp|woff|woff2|ttf|eot))(.*)",
+            "dest": "/public/$1$2"
         },
         {
             "src": "/(.*)",
@@ -24,18 +24,17 @@
         "APP_NAME": "BPS ACT",
         "APP_ENV": "production",
         "APP_DEBUG": "false",
-        "APP_URL": "http://bpsact.vercel.app/",
-        "VERCEL_DEMO_MODE": "true",
+        "APP_URL": "https://bpsact.vercel.app",
         "APP_CONFIG_CACHE": "/tmp/config.php",
         "APP_EVENTS_CACHE": "/tmp/events.php",
         "APP_PACKAGES_CACHE": "/tmp/packages.php",
         "APP_ROUTES_CACHE": "/tmp/routes.php",
         "APP_SERVICES_CACHE": "/tmp/services.php",
+        "CACHE_STORE": "array",
         "CACHE_DRIVER": "array",
         "LOG_CHANNEL": "stderr",
-        "SESSION_DRIVER": "array",
+        "SESSION_DRIVER": "cookie",
         "VIEW_COMPILED_PATH": "/tmp/views",
-        "SSR_TEMP_PATH": "/tmp/ssr",
-        "NODE_PATH": "node"
+        "SSR_TEMP_PATH": "/tmp/ssr"
     }
 }
